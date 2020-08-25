@@ -1,0 +1,11 @@
+html {
+  width: 700px;
+}
+
+.text-disabled {
+  color:  #c82333 !important;
+}
+
+.text-enabled {
+  color:  #218838 !important;
+}
