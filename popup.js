@@ -1,29 +1,84 @@
 document.addEventListener('DOMContentLoaded', function() {
 
   document.getElementById("btn_format").addEventListener('click', function() { doPrettify(); }, false);
+  document.getElementById("step1pill").addEventListener('click', function() { toggleDisplay("txt_step1fb"); }, false);
+  document.getElementById("step2pill").addEventListener('click', function() { toggleDisplay("txt_step2fb"); }, false);
+  document.getElementById("step3pill").addEventListener('click', function() { toggleDisplay("txt_step3fb"); }, false);
+  document.getElementById("txt_inputxml").addEventListener('click', function() { updateTextboxInfo(); }, false);
+  document.getElementById("txt_inputxml").addEventListener('keyup', function() { updateTextboxInfo(); }, false);
+  document.getElementById("btn_resetXsdCache").addEventListener('click', function() { resetXsdCache(); }, false);
+
 
 }, false);
 
 // **************************** Core functionality *****************************
+function updateTextboxInfo() {
+  var textarea = document.getElementById("txt_inputxml");
+  var textLines = textarea.value.substr(0, textarea.selectionStart).split("\n");
+  document.getElementById("txt_inputxml_info").innerHTML = "row: " + textLines.length +
+    " column: " + textLines[textLines.length - 1].length + 1;
+}
 
 function doPrettify() {
   var input = document.getElementById('txt_inputxml');
-  var output = document.getElementById('txt_outputxml');
-  var xsd = document.getElementById('txt_outputxsd');
-  var validation = document.getElementById('txt_validation');
+  var step1fb = document.getElementById('txt_step1fb');
+  var step2fb = document.getElementById('txt_step2fb');
+  var step3fb = document.getElementById('txt_step3fb');
 
-  result = prettify(clean(input.value));
-  output.value = result.formatted;
-  xsd.value = getXsdPayload(result.schema) ?? "Try again later"; //Would be better to fix some async stuff I guess
+  try {
+    result = prettify(clean(input.value));
+    updateStepState("step1pill", "txt_step1fb", true, "OK", "");
 
-  //create an object
-  var Module = {
-    xml: output.value,
-    schema: xsd.value,
-    arguments: ["--noout", "--schema", "file.xsd", "file.xml"]
-  };
+    input.value = result.formatted;
 
-  validation.value = validateXML(Module);
+    var xsdPayload = getXsdPayload(result.schema);
+    if (xsdPayload == null) //Likely because of async.Would be better to fix some async stuff I guess
+      throw new XsdLoadException("Could not load XSD to validate against. Retrying could solve this issue.");
+
+    updateStepState("step2pill", "txt_step2fb", true, "Loaded", xsdPayload);
+
+    var Module = {
+      xml: input.value,
+      schema: step2fb.value,
+      arguments: ["--noout", "--schema", "inputxsd", "inputxml"]
+    };
+
+    var validationResult = validateXML(Module);
+    if (!validationResult.includes("inputxml validates"))
+      throw new XsdValidationException(validationResult);
+
+    updateStepState("step3pill", "txt_step3fb", true, "Valid", "");
+
+  } catch (e) {
+    if (e instanceof XmlParseException) {
+      updateStepState("step1pill", "txt_step1fb", false, "Invalid", e.message);
+    } else if (e instanceof XsdLoadException) {
+      updateStepState("step2pill", "txt_step2fb", false, "Not Loaded", e.message);
+    } else if (e instanceof XsdValidationException) {
+      updateStepState("step3pill", "txt_step3fb", false, "Invalid", e.message);
+    } else
+      throw e;
+  }
+}
+
+function updateStepState(pill, fbBlock, success, pillText, message) {
+  document.getElementById(fbBlock).value = message;
+  setDisplay(fbBlock, !success);
+  updatePillState(pill, success, pillText);
+}
+
+function updatePillState(element, success, text) {
+  var lmnt = document.getElementById(element);
+
+  if (success) {
+    lmnt.classList.add("badge-success");
+    lmnt.classList.remove("badge-danger");
+  } else {
+    lmnt.classList.add("badge-danger");
+    lmnt.classList.remove("badge-success");
+  }
+
+  lmnt.innerHTML = text;
 }
 
 function getUrl(filename) {
@@ -101,17 +156,28 @@ function getUrl(filename) {
 
 function getXsdPayload(filename) {
   var localPayload = localStorage.getItem(filename);
-  if (localPayload != null) return localPayload;
+  if (localPayload != null)
+    return localPayload;
 
   const proxyurl = "https://cors-anywhere.herokuapp.com/";
   var url = getUrl(filename);
   fetch(proxyurl + url)
     .then(response => response.text())
-    .then(contents => localStorage.setItem(filename, contents))
-    .catch(() => console.log("Can’t access " + url + " response. Blocked by browser?"))
-
+    .then(contents => {
+      if (contents != "")
+        if (contents != null)
+          if (!contents.includes("DOCTYPE html")) //404 error
+            localStorage.setItem(filename, contents);
+    })
+    .catch(
+      () => console.log("Can’t access " + url + " response. Blocked by browser?")
+    )
 
   return localStorage.getItem(filename);
+}
+
+function resetXsdCache() {
+  localStorage.clear();
 }
 
 function clean(sourceXml) {
@@ -138,10 +204,20 @@ function prettify(sourceXml) {
   xsltProcessor.importStylesheet(xsltDoc);
   var resultDoc = xsltProcessor.transformToDocument(xmlDoc);
   var resultXml = new XMLSerializer().serializeToString(resultDoc);
+
+  if (resultDoc.all[1].localName == "parsererror") {
+    throw new XmlParseException(resultDoc.all[1].innerText + resultDoc.all[5].outerHTML);
+  }
+  if (resultDoc.all[2].localName == "parsererror") {
+    throw new XmlParseException(resultDoc.all[2].innerText + resultDoc.all[5].outerHTML);
+  }
+
   return {
     formatted: resultXml,
     schema: getSchemaFromDoc(resultDoc),
   };
+
+  //TODO: Als XML niet geformatteerd worden -> propere exception opbouwen met  resultDoc.all
 }
 
 function getSchemaFromDoc(doc) {
@@ -179,7 +255,54 @@ function toggleDisplay(elementId) {
     lmnt.classList.add("d-none");
 }
 
-// **************************** Setup functions ******************************
+function setDisplay(elementId, value) {
+  var lmnt = document.getElementById(elementId);
+
+  if (value)
+    lmnt.classList.remove("d-none");
+  else
+    lmnt.classList.add("d-none");
+}
+// **************************** Exceptions ******************************
+
+function XmlParseException(message) {
+  this.message = message;
+  // Use V8's native method if available, otherwise fallback
+  if ("captureStackTrace" in Error)
+    Error.captureStackTrace(this, XmlParseException);
+  else
+    this.stack = (new Error()).stack;
+}
+
+XmlParseException.prototype = Object.create(Error.prototype);
+XmlParseException.prototype.name = "XmlParseException";
+XmlParseException.prototype.constructor = XmlParseException;
+
+function XsdLoadException(message) {
+  this.message = message;
+  // Use V8's native method if available, otherwise fallback
+  if ("captureStackTrace" in Error)
+    Error.captureStackTrace(this, XsdLoadException);
+  else
+    this.stack = (new Error()).stack;
+}
+
+XsdLoadException.prototype = Object.create(Error.prototype);
+XsdLoadException.prototype.name = "XsdLoadException";
+XsdLoadException.prototype.constructor = XsdLoadException;
+
+function XsdValidationException(message) {
+  this.message = message;
+  // Use V8's native method if available, otherwise fallback
+  if ("captureStackTrace" in Error)
+    Error.captureStackTrace(this, XsdValidationException);
+  else
+    this.stack = (new Error()).stack;
+}
+
+XsdValidationException.prototype = Object.create(Error.prototype);
+XsdValidationException.prototype.name = "XsdValidationException";
+XsdValidationException.prototype.constructor = XsdValidationException;
 
 
 // **************************** Helper functions ******************************
