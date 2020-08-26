@@ -3,11 +3,18 @@ html,body {
   height:100vh;
   margin:0;
 }
+
 #txt_inputxml{
   width: 100% !important;
    height: 100% !important;
    resize: none;
+   border-width:0px !important;
 }
+
+textarea{
+   border-width:0px !important;
+}
+
 .section {
   height: 100%;
   display: flex;

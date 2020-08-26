@@ -11,6 +11,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 }, false);
 
+(window.onpopstate = function() {
+  const urlParams = new URLSearchParams(window.location.search);
+
+  var value = localStorage.getItem(urlParams.get('data'));
+  document.getElementById("txt_inputxml").value = value;
+
+  if (value != "" && value != null)
+    doPrettify();
+})();
+
+//xml = localStorage.getItem(key);
+
 // **************************** Core functionality *****************************
 function updateTextboxInfo() {
   var textarea = document.getElementById("txt_inputxml");
