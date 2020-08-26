@@ -12,7 +12,6 @@
 			"48": "icons/Icon-48.png",
 			"128": "icons/Icon-128.png"
 		},
-		"default_popup": "popup.html",
 		"default_title": "bensso-toolkit"
 	},
 	"permissions": ["contextMenus"],

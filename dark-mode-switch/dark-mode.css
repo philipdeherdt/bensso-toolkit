@@ -19,3 +19,14 @@
   background-color: #000 !important;
   color: #eee !important;
 }
+
+[data-theme="dark"] textarea::-webkit-scrollbar  {
+  background-color: #000 !important;
+}
+
+[data-theme="dark"] textarea::-webkit-scrollbar-thumb   {
+  background-color: #eee !important;
+}
+[data-theme="dark"] textarea::-webkit-scrollbar-button   {
+  background-color: #000 !important;
+}

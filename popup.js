@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (value != "" && value != null)
     doPrettify();
 
-  localStorage.removeItem(urlParams.get('data'));
+  //  localStorage.removeItem(urlParams.get('data'));
 })();
 
 // **************************** Core functionality *****************************
