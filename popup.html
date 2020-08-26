@@ -6,9 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="popup.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <link rel="stylesheet" href="dark-mode-switch\dark-mode.css">
   </head>
   <body>
-    
+    <div class="custom-control custom-switch">
+      <input type="checkbox" class="custom-control-input" id="darkSwitch" />
+      <label class="custom-control-label" for="darkSwitch">Dark Mode</label>
+    </div>
+    <script src="dark-mode-switch\dark-mode-switch.min.js"></script>
+
     <textarea class="form-control" id="txt_inputxml" rows="10" width="500"></textarea>
     <button class="form-control" id="btn_format">Format XML</button>
     <textarea class="form-control" id="txt_outputxml" rows="10" width="500"></textarea>
