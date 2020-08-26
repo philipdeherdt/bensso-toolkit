@@ -19,9 +19,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (value != "" && value != null)
     doPrettify();
-})();
 
-//xml = localStorage.getItem(key);
+  localStorage.removeItem(urlParams.get('data'));
+})();
 
 // **************************** Core functionality *****************************
 function updateTextboxInfo() {
@@ -45,7 +45,8 @@ function doPrettify() {
 
     var xsdPayload = getXsdPayload(result.schema);
     if (xsdPayload == null) //Likely because of async.Would be better to fix some async stuff I guess
-      throw new XsdLoadException("Could not load XSD to validate against. Retrying could solve this issue.");
+      throw new XsdLoadException("Could not load XSD to validate against. Tried fetching it at " + getUrl(result.schema) +
+        ". Retrying could solve this issue.");
 
     updateStepState("step2pill", "txt_step2fb", true, "Loaded", xsdPayload);
 
