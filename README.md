@@ -14,4 +14,4 @@ Toolkit to test integration with Belgian NSSO
 or
 2. Open the main.html directly
 
-- XSD-files are cached into local storage. If the NSSO updates an xsd's content, you should 'Reset XSD-cache' to force getting the new file.
+XSD-files are cached into local storage. If the NSSO updates an xsd's content, you should 'Reset XSD-cache' to force getting the new file.
