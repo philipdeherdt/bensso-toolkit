@@ -4,7 +4,7 @@ function onClickHandler(info, tab) {
 
   localStorage.setItem(key, info.selectionText);
 
-  chrome.tabs.create({ url: 'popup.html?data=' + key, index: tab.index + 1 });
+  chrome.tabs.create({ url: 'main.html?data=' + key, index: tab.index + 1 });
 };
 
 chrome.contextMenus.onClicked.addListener(onClickHandler);
