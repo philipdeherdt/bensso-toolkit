@@ -10,7 +10,9 @@ html,body {
    resize: none;
 }
 
-
+button{
+cursor:  pointer !important;
+}
 
 .section {
   height: 100%;

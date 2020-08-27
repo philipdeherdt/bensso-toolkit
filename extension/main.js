@@ -31,12 +31,15 @@ function updateTextboxInfo() {
 }
 
 function doPrettify() {
+  resetFeedback();
   var input = document.getElementById('txt_inputxml');
   var step1fb = document.getElementById('txt_step1fb');
   var step2fb = document.getElementById('txt_step2fb');
   var step3fb = document.getElementById('txt_step3fb');
 
   try {
+
+
     result = prettify(clean(input.value));
     updateStepState("step1pill", "txt_step1fb", true, "OK", "");
 
@@ -57,7 +60,7 @@ function doPrettify() {
 
     var validationResult = validateXML(Module);
     if (!validationResult.includes("inputxml validates"))
-      throw new XsdValidationException(validationResult);
+      throw new XsdValidationException(validationResult.split('\n').join('\n\n').split('inputxml:').join('line ').trim());
 
     updateStepState("step3pill", "txt_step3fb", true, "Valid", "");
 
@@ -71,6 +74,19 @@ function doPrettify() {
     } else
       throw e;
   }
+}
+
+function resetFeedback() {
+  document.getElementById("txt_step1fb").value = "";
+  document.getElementById("txt_step2fb").value = "";
+  document.getElementById("txt_step3fb").value = "";
+  setDisplay("txt_step1fb", false);
+  setDisplay("txt_step2fb", false);
+  setDisplay("txt_step3fb", false);
+
+  document.getElementById("step1pill").innerHTML = "";
+  document.getElementById("step2pill").innerHTML = "";
+  document.getElementById("step3pill").innerHTML = "";
 }
 
 function updateStepState(pill, fbBlock, success, pillText, message) {
@@ -218,10 +234,10 @@ function prettify(sourceXml) {
   var resultXml = new XMLSerializer().serializeToString(resultDoc);
 
   if (resultDoc.all[1].localName == "parsererror") {
-    throw new XmlParseException(resultDoc.all[1].innerText + resultDoc.all[5].outerHTML);
+    throw new XmlParseException((resultDoc.all[1].innerText + resultDoc.all[5].outerHTML).trim());
   }
   if (resultDoc.all[2].localName == "parsererror") {
-    throw new XmlParseException(resultDoc.all[2].innerText + resultDoc.all[5].outerHTML);
+    throw new XmlParseException((resultDoc.all[2].innerText + resultDoc.all[5].outerHTML).trim());
   }
 
   return {
