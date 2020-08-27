@@ -10,13 +10,13 @@ function onClickHandler(info, tab) {
 chrome.contextMenus.onClicked.addListener(onClickHandler);
 
 // Set up context menu tree at install time.
-chrome.runtime.onInstalled.addListener(function() {
-  var id = chrome.contextMenus.create({
-    "title": "Analyze NSSO XML",
-    "contexts": ["selection"],
-    "id": "contextselection"
-  });
+//chrome.runtime.onInstalled.addListener(function() {
+var id = chrome.contextMenus.create({
+  "title": "Analyze NSSO XML",
+  "contexts": ["selection"],
+  "id": "contextselection"
 });
+//});
 
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
