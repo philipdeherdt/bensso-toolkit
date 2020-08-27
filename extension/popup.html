@@ -15,24 +15,24 @@
 
     <div class="section col">
       <div id="inputArea" class="filler">
-        <textarea class="form-control" id="txt_inputxml" placeholder="Insert your XML here"></textarea>
+        <textarea class="form-control" id="txt_inputxml" placeholder="Insert your XML here" spellcheck="false"></textarea>
       </div>
       <div id="txt_inputxml_info"></div>
     </div>
 
     <div class="section col-4">
       <div class="filler" id="processingArea">
-        <button class="form-control" id="btn_format">Prettify and validate</button>
+        <button id="btn_format" type="button" class="form-control btn btn-primary">Prettify and validate</button>
 
         <ol id="checkResults">
           <li id="step1">XML structure <span id="step1pill" class="badge badge-pill"></span>
-            <textarea class="form-control d-none" id="txt_step1fb" rows="10"></textarea>
+            <textarea class="form-control d-none" id="txt_step1fb" rows="10" spellcheck="false"></textarea>
           </li>
           <li id="step2">XSD file <span id="step2pill" class="badge badge-pill"></span>
-            <textarea class="form-control d-none" id="txt_step2fb" rows="3"></textarea>
+            <textarea class="form-control d-none" id="txt_step2fb" rows="3" spellcheck="false"></textarea>
           </li>
           <li id="step3">XSD validation <span id="step3pill" class="badge badge-pill"></span>
-            <textarea class="form-control d-none" id="txt_step3fb" rows="10"></textarea>
+            <textarea class="form-control d-none" id="txt_step3fb" rows="10" spellcheck="false"></textarea>
           </li>
         </ol>
       </div>
@@ -44,7 +44,7 @@
         </div>
         <script src="dark-mode-switch\dark-mode-switch.min.js"></script>
 
-        <button class="form-control" id="btn_resetXsdCache">Reset XSD-cache</button>
+        <button id="btn_resetXsdCache" type="button" class="form-control btn btn-primary">Reset XSD-cache</button>
 
       </div>
 

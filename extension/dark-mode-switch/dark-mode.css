@@ -30,3 +30,7 @@
 [data-theme="dark"] textarea::-webkit-scrollbar-button   {
   background-color: #000 !important;
 }
+
+[data-theme="dark"] textarea{
+   border-width:0px !important;
+}

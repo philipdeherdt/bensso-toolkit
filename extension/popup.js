@@ -20,15 +20,14 @@ document.addEventListener('DOMContentLoaded', function() {
   if (value != "" && value != null)
     doPrettify();
 
-  //  localStorage.removeItem(urlParams.get('data'));
+  localStorage.removeItem(urlParams.get('data'));
 })();
 
 // **************************** Core functionality *****************************
 function updateTextboxInfo() {
   var textarea = document.getElementById("txt_inputxml");
   var textLines = textarea.value.substr(0, textarea.selectionStart).split("\n");
-  document.getElementById("txt_inputxml_info").innerHTML = "row: " + textLines.length +
-    " column: " + textLines[textLines.length - 1].length + 1;
+  document.getElementById("txt_inputxml_info").innerHTML = "row: " + textLines.length + " column: " + (textLines[textLines.length - 1].length + 1);
 }
 
 function doPrettify() {
