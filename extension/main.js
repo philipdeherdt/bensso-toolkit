@@ -8,9 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById("txt_inputxml").addEventListener('keyup', function() { updateTextboxInfo(); }, false);
   document.getElementById("btn_resetXsdCache").addEventListener('click', function() { resetXsdCache(); }, false);
 
-
 }, false);
 
+//Load data coming in through selection & contextMenu
 (window.onpopstate = function() {
   const urlParams = new URLSearchParams(window.location.search);
 
@@ -23,12 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
   localStorage.removeItem(urlParams.get('data'));
 })();
 
-// **************************** Core functionality *****************************
-function updateTextboxInfo() {
-  var textarea = document.getElementById("txt_inputxml");
-  var textLines = textarea.value.substr(0, textarea.selectionStart).split("\n");
-  document.getElementById("txt_inputxml_info").innerHTML = "row: " + textLines.length + " column: " + (textLines[textLines.length - 1].length + 1);
-}
+// **************************** Core functionality - control flow *****************************
 
 function doPrettify() {
   resetFeedback();
@@ -38,8 +33,6 @@ function doPrettify() {
   var step3fb = document.getElementById('txt_step3fb');
 
   try {
-
-
     result = prettify(clean(input.value));
     updateStepState("step1pill", "txt_step1fb", true, "OK", "");
 
@@ -76,38 +69,66 @@ function doPrettify() {
   }
 }
 
-function resetFeedback() {
-  document.getElementById("txt_step1fb").value = "";
-  document.getElementById("txt_step2fb").value = "";
-  document.getElementById("txt_step3fb").value = "";
-  setDisplay("txt_step1fb", false);
-  setDisplay("txt_step2fb", false);
-  setDisplay("txt_step3fb", false);
+function getXsdPayload(filename) {
+  var localPayload = localStorage.getItem(filename);
+  if (localPayload != null)
+    return localPayload;
 
-  document.getElementById("step1pill").innerHTML = "";
-  document.getElementById("step2pill").innerHTML = "";
-  document.getElementById("step3pill").innerHTML = "";
+  const proxyurl = "https://cors-anywhere.herokuapp.com/";
+  var url = getUrl(filename);
+  fetch(proxyurl + url)
+    .then(response => response.text())
+    .then(contents => {
+      if (contents != "")
+        if (contents != null)
+          if (!contents.includes("DOCTYPE html")) //404 error
+            localStorage.setItem(filename, contents);
+    })
+    .catch(
+      () => console.log("Can’t access " + url + " response. Blocked by browser?")
+    )
+
+  return localStorage.getItem(filename);
 }
 
-function updateStepState(pill, fbBlock, success, pillText, message) {
-  document.getElementById(fbBlock).value = message;
-  setDisplay(fbBlock, !success);
-  updatePillState(pill, success, pillText);
-}
+function prettify(sourceXml) {
+  var xmlDoc = new DOMParser().parseFromString(sourceXml, 'application/xml');
+  var xsltDoc = new DOMParser().parseFromString([
+    // describes how we want to modify the XML - indent everything
+    '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">',
+    '  <xsl:strip-space elements="*"/>',
+    '  <xsl:template match="para[content-style][not(text())]">', // change to just text() to strip space in text nodes
+    '    <xsl:value-of select="normalize-space(.)"/>',
+    '  </xsl:template>',
+    '  <xsl:template match="node()|@*">',
+    '    <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>',
+    '  </xsl:template>',
+    '  <xsl:output indent="yes"/>',
+    '</xsl:stylesheet>',
+  ].join('\n'), 'application/xml');
 
-function updatePillState(element, success, text) {
-  var lmnt = document.getElementById(element);
+  var xsltProcessor = new XSLTProcessor();
+  xsltProcessor.importStylesheet(xsltDoc);
+  var resultDoc = xsltProcessor.transformToDocument(xmlDoc);
+  var resultXml = new XMLSerializer().serializeToString(resultDoc);
 
-  if (success) {
-    lmnt.classList.add("badge-success");
-    lmnt.classList.remove("badge-danger");
-  } else {
-    lmnt.classList.add("badge-danger");
-    lmnt.classList.remove("badge-success");
+  if (resultDoc.all[1].localName == "parsererror") {
+    throw new XmlParseException((resultDoc.all[1].innerText + resultDoc.all[5].outerHTML).trim());
+  }
+  if (resultDoc.all[2].localName == "parsererror") {
+    throw new XmlParseException((resultDoc.all[2].innerText + resultDoc.all[5].outerHTML).trim());
   }
 
-  lmnt.innerHTML = text;
+  return {
+    formatted: resultXml,
+    schema: getSchemaFromDoc(resultDoc),
+  };
+
+  //TODO: Als XML niet geformatteerd worden -> propere exception opbouwen met  resultDoc.all
 }
+
+// **************************** Core functionality - base functions ******************************
+
 
 function getUrl(filename) {
   var url = "https://www.socialsecurity.be/docu_xml/";
@@ -182,72 +203,6 @@ function getUrl(filename) {
   return url.concat(filename);
 }
 
-function getXsdPayload(filename) {
-  var localPayload = localStorage.getItem(filename);
-  if (localPayload != null)
-    return localPayload;
-
-  const proxyurl = "https://cors-anywhere.herokuapp.com/";
-  var url = getUrl(filename);
-  fetch(proxyurl + url)
-    .then(response => response.text())
-    .then(contents => {
-      if (contents != "")
-        if (contents != null)
-          if (!contents.includes("DOCTYPE html")) //404 error
-            localStorage.setItem(filename, contents);
-    })
-    .catch(
-      () => console.log("Can’t access " + url + " response. Blocked by browser?")
-    )
-
-  return localStorage.getItem(filename);
-}
-
-function resetXsdCache() {
-  localStorage.clear();
-}
-
-function clean(sourceXml) {
-  return sourceXml.split('\\"').join('"');
-}
-
-function prettify(sourceXml) {
-  var xmlDoc = new DOMParser().parseFromString(sourceXml, 'application/xml');
-  var xsltDoc = new DOMParser().parseFromString([
-    // describes how we want to modify the XML - indent everything
-    '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">',
-    '  <xsl:strip-space elements="*"/>',
-    '  <xsl:template match="para[content-style][not(text())]">', // change to just text() to strip space in text nodes
-    '    <xsl:value-of select="normalize-space(.)"/>',
-    '  </xsl:template>',
-    '  <xsl:template match="node()|@*">',
-    '    <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>',
-    '  </xsl:template>',
-    '  <xsl:output indent="yes"/>',
-    '</xsl:stylesheet>',
-  ].join('\n'), 'application/xml');
-
-  var xsltProcessor = new XSLTProcessor();
-  xsltProcessor.importStylesheet(xsltDoc);
-  var resultDoc = xsltProcessor.transformToDocument(xmlDoc);
-  var resultXml = new XMLSerializer().serializeToString(resultDoc);
-
-  if (resultDoc.all[1].localName == "parsererror") {
-    throw new XmlParseException((resultDoc.all[1].innerText + resultDoc.all[5].outerHTML).trim());
-  }
-  if (resultDoc.all[2].localName == "parsererror") {
-    throw new XmlParseException((resultDoc.all[2].innerText + resultDoc.all[5].outerHTML).trim());
-  }
-
-  return {
-    formatted: resultXml,
-    schema: getSchemaFromDoc(resultDoc),
-  };
-
-  //TODO: Als XML niet geformatteerd worden -> propere exception opbouwen met  resultDoc.all
-}
-
 function getSchemaFromDoc(doc) {
   try {
     return doc.documentElement.attributes["xsi:noNamespaceSchemaLocation"].value;
@@ -256,23 +211,35 @@ function getSchemaFromDoc(doc) {
   }
 }
 
-// **************************** Status functions ******************************
-
-function setStatus(text) {
-  var str = "";
-  try {
-    str = chrome.i18n.getMessage("copiedToClipboard", [text]);
-  } catch (err) {
-    str = text + ' copied to clipboard';
-  }
-
-  var stat = document.getElementById('div-status');
-  stat.innerHTML = str;
-  stat.classList.add("list-group-item-success");
-  stat.classList.remove("list-group-item-secondary");
+function clean(sourceXml) {
+  return sourceXml.split('\\"').join('"');
 }
 
-// **************************** Settings functions ******************************
+function resetXsdCache() {
+  localStorage.clear();
+}
+
+
+// **************************** UI control ******************************
+
+function updateTextboxInfo() {
+  var textarea = document.getElementById("txt_inputxml");
+  var textLines = textarea.value.substr(0, textarea.selectionStart).split("\n");
+  document.getElementById("txt_inputxml_info").innerHTML = "row: " + textLines.length + " column: " + (textLines[textLines.length - 1].length + 1);
+}
+
+function resetFeedback() {
+  document.getElementById("txt_step1fb").value = "";
+  document.getElementById("txt_step2fb").value = "";
+  document.getElementById("txt_step3fb").value = "";
+  setDisplay("txt_step1fb", false);
+  setDisplay("txt_step2fb", false);
+  setDisplay("txt_step3fb", false);
+
+  document.getElementById("step1pill").innerHTML = "";
+  document.getElementById("step2pill").innerHTML = "";
+  document.getElementById("step3pill").innerHTML = "";
+}
 
 function toggleDisplay(elementId) {
   var lmnt = document.getElementById(elementId);
@@ -291,6 +258,27 @@ function setDisplay(elementId, value) {
   else
     lmnt.classList.add("d-none");
 }
+
+function updateStepState(pill, fbBlock, success, pillText, message) {
+  document.getElementById(fbBlock).value = message;
+  setDisplay(fbBlock, !success);
+  updatePillState(pill, success, pillText);
+}
+
+function updatePillState(element, success, text) {
+  var lmnt = document.getElementById(element);
+
+  if (success) {
+    lmnt.classList.add("badge-success");
+    lmnt.classList.remove("badge-danger");
+  } else {
+    lmnt.classList.add("badge-danger");
+    lmnt.classList.remove("badge-success");
+  }
+
+  lmnt.innerHTML = text;
+}
+
 // **************************** Exceptions ******************************
 
 function XmlParseException(message) {
