@@ -25,3 +25,7 @@ function uuidv4() {
     return v.toString(16);
   });
 }
+
+chrome.browserAction.onClicked.addListener(function(tab) {
+  chrome.tabs.create({ 'url': chrome.extension.getURL('main.html'), 'selected': true });
+});
