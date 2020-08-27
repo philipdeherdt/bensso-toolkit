@@ -2,8 +2,8 @@
 	"manifest_version": 2,
 
 	"name": "bensso-toolkit",
-	"description": "bensso-toolkit",
-	"version": "1.0",
+	"description": "Toolkit to test integration with Belgian NSSO",
+	"version": "1.1",
 
 	"browser_action": {
 		"default_icon": {
