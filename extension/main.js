@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById("txt_inputxml").addEventListener('keyup', function() { updateTextboxInfo(); }, false);
   document.getElementById("btn_resetXsdCache").addEventListener('click', function() { resetXsdCache(); }, false);
 
+  preloadXsdCache();
+
 }, false);
 
 //Load data coming in through selection & contextMenu
@@ -25,6 +27,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // **************************** Core functionality - control flow *****************************
 
+async function preloadXsdCache() {
+  var rawFile = new XMLHttpRequest();
+  rawFile.open("GET", "xsd/xsd.zip", true);
+  rawFile.responseType = 'blob';
+  rawFile.onreadystatechange = function() {
+    if (rawFile.readyState === 4) {
+      if (rawFile.status === 200 || rawFile.status == 0) {
+        var a = new FileReader();
+        a.readAsBinaryString(this.response);
+        a.onloadend = function() {
+          JSZip.loadAsync(a.result).then(function(zip) {
+            zip.forEach(function(relativePath, file) {
+              var content = "";
+              file.internalStream("string")
+                .on("data", function(data, metadata) {
+                  content = content.concat(data);
+                })
+                .on("end", function() {
+                  localStorage.setItem(file.name, content);
+                })
+                .resume();
+            });
+          });
+        };
+      }
+    }
+  }
+  rawFile.send(null);
+}
+
 function doPrettify() {
   resetFeedback();
   var input = document.getElementById('txt_inputxml');
@@ -39,7 +71,8 @@ function doPrettify() {
     input.value = result.formatted;
 
     if (result.schema == "XsdLoadException") //yes, this is dirty.
-      throw new XsdLoadException("Could not determine which XSD to validate against. Could not find xsi:noNamespaceSchemaLocation in the supplied XML");
+      throw new XsdLoadException(
+        "Could not determine which XSD to validate against. Could not find xsi:noNamespaceSchemaLocation in the supplied XML");
 
     var xsdPayload = getXsdPayload(result.schema);
     if (xsdPayload == null) //Likely because of async.Would be better to fix some async stuff I guess
@@ -148,7 +181,8 @@ function getUrl(filename) {
       else if (rgx[2] == "003") url = url.concat("scen3/");
       else if (rgx[2] == "005") url = url.concat("scen5/");
       else if (rgx[2] == "006") url = url.concat("scen6/");
-      else throw new XsdLoadException("Could not determine which XSD to validate against. The name in xsi:noNamespaceSchemaLocation could not be interpreted.");
+      else throw new XsdLoadException(
+        "Could not determine which XSD to validate against. The name in xsi:noNamespaceSchemaLocation could not be interpreted.");
       break;
     case "AADD":
       url = url.concat("drs/inami/scen7/");
@@ -165,7 +199,8 @@ function getUrl(filename) {
       else if (rgx[2] == "009") url = url.concat("scen9/");
       else if (rgx[2] == "010") url = url.concat("scen10/");
       else if (rgx[2] == "011") url = url.concat("scen11/");
-      else throw new XsdLoadException("Could not determine which XSD to validate against. The name in xsi:noNamespaceSchemaLocation could not be interpreted.");
+      else throw new XsdLoadException(
+        "Could not determine which XSD to validate against. The name in xsi:noNamespaceSchemaLocation could not be interpreted.");
       break;
     case "IDFLUX":
       url = url.concat("idflux/");
@@ -207,7 +242,8 @@ function getUrl(filename) {
       url = url.concat("ecounemploymentdaysconsultanswer/");
       break;
     default:
-      throw new XsdLoadException("Could not determine which XSD to validate against. The name in xsi:noNamespaceSchemaLocation could not be interpreted.");
+      throw new XsdLoadException(
+        "Could not determine which XSD to validate against. The name in xsi:noNamespaceSchemaLocation could not be interpreted.");
   }
 
   return url.concat(filename);
@@ -227,6 +263,7 @@ function clean(sourceXml) {
 
 function resetXsdCache() {
   localStorage.clear();
+  preloadXsdCache();
 }
 
 
@@ -332,3 +369,5 @@ XsdValidationException.prototype.constructor = XsdValidationException;
 
 
 // **************************** Helper functions ******************************
+
+var zimazip = ""
