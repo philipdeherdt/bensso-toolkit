@@ -38,6 +38,9 @@ function doPrettify() {
 
     input.value = result.formatted;
 
+    if (result.schema == "XsdLoadException") //yes, this is dirty.
+      throw new XsdLoadException("Could not determine which XSD to validate against. Could not find xsi:noNamespaceSchemaLocation in the supplied XML");
+
     var xsdPayload = getXsdPayload(result.schema);
     if (xsdPayload == null) //Likely because of async.Would be better to fix some async stuff I guess
       throw new XsdLoadException("Could not load XSD to validate against. Tried fetching it at " + getUrl(result.schema) +
@@ -131,6 +134,9 @@ function prettify(sourceXml) {
 
 
 function getUrl(filename) {
+  if (filename.startsWith('http') || filename.startsWith('www'))
+    return filename;
+
   var url = "https://www.socialsecurity.be/docu_xml/";
   var rgx = (/([A-Z a-z]*)(\d*)_(\d*)/g).exec(filename)
 
@@ -142,6 +148,7 @@ function getUrl(filename) {
       else if (rgx[2] == "003") url = url.concat("scen3/");
       else if (rgx[2] == "005") url = url.concat("scen5/");
       else if (rgx[2] == "006") url = url.concat("scen6/");
+      else throw new XsdLoadException("Could not determine which XSD to validate against. The name in xsi:noNamespaceSchemaLocation could not be interpreted.");
       break;
     case "AADD":
       url = url.concat("drs/inami/scen7/");
@@ -158,6 +165,7 @@ function getUrl(filename) {
       else if (rgx[2] == "009") url = url.concat("scen9/");
       else if (rgx[2] == "010") url = url.concat("scen10/");
       else if (rgx[2] == "011") url = url.concat("scen11/");
+      else throw new XsdLoadException("Could not determine which XSD to validate against. The name in xsi:noNamespaceSchemaLocation could not be interpreted.");
       break;
     case "IDFLUX":
       url = url.concat("idflux/");
@@ -198,6 +206,8 @@ function getUrl(filename) {
     case "EcoUnemploymentDaysConsultAnswer":
       url = url.concat("ecounemploymentdaysconsultanswer/");
       break;
+    default:
+      throw new XsdLoadException("Could not determine which XSD to validate against. The name in xsi:noNamespaceSchemaLocation could not be interpreted.");
   }
 
   return url.concat(filename);
@@ -207,7 +217,7 @@ function getSchemaFromDoc(doc) {
   try {
     return doc.documentElement.attributes["xsi:noNamespaceSchemaLocation"].value;
   } catch (err) {
-    return '';
+    return "XsdLoadException";
   }
 }
 
